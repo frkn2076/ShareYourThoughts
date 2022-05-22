@@ -1,9 +1,9 @@
-using API.Data;
 using API.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace API.Controllers
 {
@@ -11,19 +11,20 @@ namespace API.Controllers
     [Route("[controller]")]
     public class ThoughtController : ControllerBase
     {
-        private readonly IConnectionService _connectionService;
+        private readonly string _connectionString;
+
         private readonly int PAGINATION_COUNT = 10;
 
-        public IDbConnection PostgresConnection => _connectionService.GetPostgresConnection();
-
-        public ThoughtController(IConnectionService connectionService)
+        public ThoughtController(IConfiguration configuration)
         {
-            _connectionService = connectionService;
+            _connectionString = configuration.GetConnectionString("PostgresContext");
         }
 
         [HttpGet("{id}")]
         public IActionResult GetMessages(int id)
         {
+            var connection = new NpgsqlConnection(_connectionString);
+
             try
             {
                 if (id <= 0)
@@ -31,7 +32,9 @@ namespace API.Controllers
 
                 var sql = $"SELECT message FROM public.messages LIMIT {PAGINATION_COUNT} OFFSET {(id - 1) * PAGINATION_COUNT}";
 
-                var command = PostgresConnection.CreateCommand();
+                connection.Open();
+
+                var command = connection.CreateCommand();
                 command.CommandText = sql;
                 var reader = command.ExecuteReader();
 
@@ -48,12 +51,17 @@ namespace API.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
-            
+            finally
+            {
+                connection.Close();
+            }
         }
 
         [HttpPost]
         public IActionResult PostMessage(PostModel request)
         {
+            var connection = new NpgsqlConnection(_connectionString);
+
             try
             {
                 if (request == null || string.IsNullOrWhiteSpace(request.Message) || request.Message.Length > 1000)
@@ -61,7 +69,9 @@ namespace API.Controllers
 
                 var sql = $"INSERT INTO public.messages (message) VALUES ('{request.Message}')";
 
-                var command = PostgresConnection.CreateCommand();
+                connection.Open();
+
+                var command = connection.CreateCommand();
                 command.CommandText = sql;
                 command.ExecuteNonQuery();
 
@@ -71,11 +81,17 @@ namespace API.Controllers
             {
                 return StatusCode(500, ex);
             }
+            finally
+            {
+                connection.Close();
+            }
         }
 
         [HttpPost("filter")]
         public IActionResult FilterMessages(FilterModel request)
         {
+            var connection = new NpgsqlConnection(_connectionString);
+
             try
             {
                 if (request == null || request.PageNo <= 0 || string.IsNullOrWhiteSpace(request.Filter) || request.Filter.Length > 1000)
@@ -83,7 +99,9 @@ namespace API.Controllers
 
                 var sql = $"SELECT message FROM public.messages WHERE message LIKE '%{request.Filter}%' LIMIT {PAGINATION_COUNT} OFFSET {(request.PageNo - 1) * PAGINATION_COUNT}";
 
-                var command = PostgresConnection.CreateCommand();
+                connection.Open();
+
+                var command = connection.CreateCommand();
                 command.CommandText = sql;
                 var reader = command.ExecuteReader();
 
@@ -99,6 +117,10 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ex);
+            }
+            finally
+            {
+                connection.Close();
             }
         }
     }

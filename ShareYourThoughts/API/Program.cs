@@ -8,7 +8,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddCors();
 
-builder.Services.AddScoped<IConnectionService, ConnectionService>();
+builder.Services.AddTransient<IConnectionService, ConnectionService>();
 
 var app = builder.Build();
 

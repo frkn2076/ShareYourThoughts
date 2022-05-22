@@ -30,7 +30,7 @@ namespace API.Controllers
                 if (id <= 0)
                     return BadRequest();
 
-                var sql = $"SELECT message FROM public.messages LIMIT {PAGINATION_COUNT} OFFSET {(id - 1) * PAGINATION_COUNT}";
+                var sql = $"SELECT message FROM public.messages ORDER BY id DESC LIMIT {PAGINATION_COUNT} OFFSET {(id - 1) * PAGINATION_COUNT}";
 
                 connection.Open();
 
@@ -97,7 +97,7 @@ namespace API.Controllers
                 if (request == null || request.PageNo <= 0 || string.IsNullOrWhiteSpace(request.Filter) || request.Filter.Length > 1000)
                     return BadRequest();
 
-                var sql = $"SELECT message FROM public.messages WHERE message LIKE '%{request.Filter}%' LIMIT {PAGINATION_COUNT} OFFSET {(request.PageNo - 1) * PAGINATION_COUNT}";
+                var sql = $"SELECT message FROM public.messages WHERE message LIKE '%{request.Filter}%' ORDER BY id DESC LIMIT {PAGINATION_COUNT} OFFSET {(request.PageNo - 1) * PAGINATION_COUNT}";
 
                 connection.Open();
 

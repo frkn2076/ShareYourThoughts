@@ -1,6 +1,7 @@
 using API.Data;
 using API.Models;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -23,60 +24,82 @@ namespace API.Controllers
         [HttpGet("{id}")]
         public IActionResult GetMessages(int id)
         {
-            if (id <= 0)
-                return BadRequest();
-
-            var sql = $"SELECT message FROM public.messages LIMIT {PAGINATION_COUNT} OFFSET {(id-1) * PAGINATION_COUNT}";
-
-            var command = PostgresConnection.CreateCommand();
-            command.CommandText = sql;
-            var reader = command.ExecuteReader();
-
-            var messsages = new List<string>();
-            messsages.Capacity = PAGINATION_COUNT;
-            while (reader.Read())
+            try
             {
-                messsages.Add((string)reader["message"]);
-            }
+                if (id <= 0)
+                    return BadRequest();
 
-            return Ok(messsages);
+                var sql = $"SELECT message FROM public.messages LIMIT {PAGINATION_COUNT} OFFSET {(id - 1) * PAGINATION_COUNT}";
+
+                var command = PostgresConnection.CreateCommand();
+                command.CommandText = sql;
+                var reader = command.ExecuteReader();
+
+                var messsages = new List<string>();
+                messsages.Capacity = PAGINATION_COUNT;
+                while (reader.Read())
+                {
+                    messsages.Add((string)reader["message"]);
+                }
+
+                return Ok(messsages);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            
         }
 
         [HttpPost]
         public IActionResult PostMessage(PostModel request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Message) || request.Message.Length > 1000)
-                return BadRequest();
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Message) || request.Message.Length > 1000)
+                    return BadRequest();
 
-            var sql = $"INSERT INTO public.messages (message) VALUES ('{request.Message}')";
+                var sql = $"INSERT INTO public.messages (message) VALUES ('{request.Message}')";
 
-            var command = PostgresConnection.CreateCommand();
-            command.CommandText = sql;
-            command.ExecuteNonQuery();
+                var command = PostgresConnection.CreateCommand();
+                command.CommandText = sql;
+                command.ExecuteNonQuery();
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
         }
 
         [HttpPost("filter")]
         public IActionResult FilterMessages(FilterModel request)
         {
-            if (request == null || request.PageNo <= 0 || string.IsNullOrWhiteSpace(request.Filter) || request.Filter.Length > 1000)
-                return BadRequest();
-
-            var sql = $"SELECT message FROM public.messages WHERE message LIKE '%{request.Filter}%' LIMIT {PAGINATION_COUNT} OFFSET {(request.PageNo - 1) * PAGINATION_COUNT}";
-
-            var command = PostgresConnection.CreateCommand();
-            command.CommandText = sql;
-            var reader = command.ExecuteReader();
-
-            var messsages = new List<string>();
-            messsages.Capacity = PAGINATION_COUNT;
-            while (reader.Read())
+            try
             {
-                messsages.Add((string)reader["message"]);
-            }
+                if (request == null || request.PageNo <= 0 || string.IsNullOrWhiteSpace(request.Filter) || request.Filter.Length > 1000)
+                    return BadRequest();
 
-            return Ok(messsages);
+                var sql = $"SELECT message FROM public.messages WHERE message LIKE '%{request.Filter}%' LIMIT {PAGINATION_COUNT} OFFSET {(request.PageNo - 1) * PAGINATION_COUNT}";
+
+                var command = PostgresConnection.CreateCommand();
+                command.CommandText = sql;
+                var reader = command.ExecuteReader();
+
+                var messsages = new List<string>();
+                messsages.Capacity = PAGINATION_COUNT;
+                while (reader.Read())
+                {
+                    messsages.Add((string)reader["message"]);
+                }
+
+                return Ok(messsages);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
         }
     }
 }
